@@ -95,3 +95,36 @@ export function HeaderUserMenu() {
       </Button>
     );
   }
+
+   const label = user.display_name ?? user.email ?? "Account";
+  const initials = (label.match(/\b\w/g) ?? ["U"]).slice(0, 2).join("").toUpperCase();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-full border border-border/60 bg-background/50 pl-1 pr-3 py-1 text-xs font-medium transition-colors hover:bg-background/80 cursor-pointer"
+        >
+          <Avatar className="h-6 w-6">
+            {user.avatar_url ? <AvatarImage src={user.avatar_url} alt={label} /> : null}
+            <AvatarFallback className="text-[0.6rem]">{initials}</AvatarFallback>
+          </Avatar>
+          <span className="max-w-[140px] truncate">{label}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
+          {user.email}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate({ to: "/settings" })} className="cursor-pointer">
+          <User className="h-4 w-4" /> Account settings
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+          <LogOut className="h-4 w-4" /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
