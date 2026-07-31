@@ -36,3 +36,25 @@ interface EmptyStateProps {
   description: string;
   action?: ReactNode;
 }
+
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="mx-6 my-8 md:mx-10">
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-surface p-10 shadow-panel">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand/10 blur-3xl" />
+        <div className="relative flex flex-col items-start gap-4">
+          <div className="grid h-11 w-11 place-items-center rounded-xl border border-border/60 bg-background/60 text-brand">
+            {icon}
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="font-display text-xl font-semibold tracking-tight">{title}</h2>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          </div>
+          {action && <div className="pt-2">{action}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
