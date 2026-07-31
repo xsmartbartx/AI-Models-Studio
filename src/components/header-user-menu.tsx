@@ -68,3 +68,30 @@ export function HeaderUserMenu() {
       sub.subscription.unsubscribe();
     };
   }, [router, queryClient]);
+
+   async function handleSignOut() {
+    try {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Signed out");
+      navigate({ to: "/auth", replace: true });
+    } catch (err) {
+      toast.error("Sign-out failed", { description: (err as Error).message });
+    }
+  }
+
+  if (loading) return null;
+
+  if (!user) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => navigate({ to: "/auth" })}
+      >
+        Sign in
+      </Button>
+    );
+  }
