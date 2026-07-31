@@ -29,3 +29,10 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
     </div>
   );
 }
+
+interface EmptyStateProps {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}
