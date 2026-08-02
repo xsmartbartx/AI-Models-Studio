@@ -71,3 +71,39 @@ export const checkIsAdmin = createServerFn({ method: "GET" })
     });
     return { isAdmin: !!data };
   });
+
+  const RoleMutation = z.object({
+  userId: z.string().uuid(),
+  role: z.enum(["admin", "user"]),
+});
+
+export const grantRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => RoleMutation.parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { writeAudit } = await import("@/lib/audit.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.userId, role: data.role });
+    if (error && !/duplicate key/i.test(error.message)) throw new Error(error.message);
+    await writeAudit({
+      actorId: context.userId,
+      actorEmail: await actorEmail(context.userId),
+      action: "role.grant",
+      targetKind: "user",
+      targetId: data.userId,
+      metadata: { role: data.role },
+    });
+    return { ok: true };
+  });
+
+export const revokeRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => RoleMutation.parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (data.userId === context.userId && data.role === "admin") {
+      throw new Error("You cannot revoke your own admin role.");
+    }
