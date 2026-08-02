@@ -186,3 +186,25 @@ export const adminDeleteRow = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+  const ListAuditInput = z.object({
+  limit: z.number().int().min(1).max(500).optional(),
+  action: z.string().max(100).optional(),
+}).optional();
+
+export const listAuditLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => ListAuditInput.parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin
+      .from("audit_logs")
+      .select("id, actor_id, actor_email, action, target_kind, target_id, metadata, created_at")
+      .order("created_at", { ascending: false })
+      .limit(data?.limit ?? 200);
+    if (data?.action) q = q.eq("action", data.action);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
