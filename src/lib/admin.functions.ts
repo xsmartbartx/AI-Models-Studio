@@ -107,3 +107,82 @@ export const revokeRole = createServerFn({ method: "POST" })
     if (data.userId === context.userId && data.role === "admin") {
       throw new Error("You cannot revoke your own admin role.");
     }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { writeAudit } = await import("@/lib/audit.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", data.role);
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actorId: context.userId,
+      actorEmail: await actorEmail(context.userId),
+      action: "role.revoke",
+      targetKind: "user",
+      targetId: data.userId,
+      metadata: { role: data.role },
+    });
+    return { ok: true };
+  });
+
+  const DeleteInput = z.object({
+  kind: z.enum(["image", "video", "character"]),
+  id: z.string().uuid(),
+});
+
+export const adminDeleteRow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => DeleteInput.parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { writeAudit } = await import("@/lib/audit.server");
+
+    let ownerId: string | null = null;
+
+    if (data.kind === "image") {
+      const { data: row } = await supabaseAdmin
+        .from("images")
+        .select("storage_path, user_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      ownerId = row?.user_id ?? null;
+      if (row?.storage_path) {
+        await supabaseAdmin.storage.from("generated-images").remove([row.storage_path]);
+      }
+      const { error } = await supabaseAdmin.from("images").delete().eq("id", data.id);
+      if (error) throw new Error(error.message);
+    } else if (data.kind === "video") {
+      const { data: row } = await supabaseAdmin
+        .from("videos")
+        .select("storage_path, user_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      ownerId = row?.user_id ?? null;
+      if (row?.storage_path) {
+        await supabaseAdmin.storage.from("generated-videos").remove([row.storage_path]);
+      }
+      const { error } = await supabaseAdmin.from("videos").delete().eq("id", data.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { data: row } = await supabaseAdmin
+        .from("characters")
+        .select("user_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      ownerId = row?.user_id ?? null;
+      const { error } = await supabaseAdmin.from("characters").delete().eq("id", data.id);
+      if (error) throw new Error(error.message);
+    }
+
+    await writeAudit({
+      actorId: context.userId,
+      actorEmail: await actorEmail(context.userId),
+      action: `admin.delete.${data.kind}`,
+      targetKind: data.kind,
+      targetId: data.id,
+      metadata: { owner_id: ownerId },
+    });
+    return { ok: true };
+  });
