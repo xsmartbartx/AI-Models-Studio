@@ -76,3 +76,37 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     </div>
   );
 }
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "AI Influencer Factory — Zero-budget studio" },
+      {
+        name: "description",
+        content:
+          "Design consistent AI influencers, generate photos and short videos, and schedule posts — powered by open-source tools running on your own machine.",
+      },
+      { property: "og:title", content: "AI Influencer Factory" },
+      {
+        property: "og:description",
+        content:
+          "Zero-budget platform for creating virtual influencers with ComfyUI, FLUX, InstantID and Ollama.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
