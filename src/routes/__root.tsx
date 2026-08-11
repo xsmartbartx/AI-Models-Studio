@@ -124,3 +124,51 @@ function RootShell({ children }: { children: ReactNode }) {
     </html>
   );
 }
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isBareLayout = pathname === "/auth" || pathname.startsWith("/auth/");
+
+  if (isBareLayout) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <main className="min-h-screen bg-background text-foreground">
+          <Outlet />
+        </main>
+        <Toaster />
+      </QueryClientProvider>
+    );
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-background text-foreground">
+          <AppSidebar />
+          <div className="flex flex-1 flex-col">
+            <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-md">
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+              <div className="h-4 w-px bg-border" />
+              <span className="font-display text-sm font-medium tracking-tight">
+                Studio
+              </span>
+              <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="hidden items-center gap-2 sm:inline-flex">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-brand shadow-glow" />
+                  Local runtime idle
+                </span>
+                <HeaderUserMenu />
+              </div>
+            </header>
+            <main className="flex-1">
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
+      <Toaster />
+    </QueryClientProvider>
+  );
+}
